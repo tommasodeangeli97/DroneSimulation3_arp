@@ -4,7 +4,7 @@ The third Advanced and Robotics Programming assignament:  is a drone simulator i
 ## Description
 The program is composed by eight different processes that cooperate in real time and share informations.
 
-The communication between the `server` and `target` and between the `server` and the `obstacles` is implemented using socket; the communication between the server, the drone and the keyboard is implemented using pipes and shared memory.
+The communication between the `server` and `target` and between the `server` and the `obstacles` is implemented using socket; the communication between the `server`, the `drone` and the `keyboard` is implemented using pipes and shared memory.
 
 
 The final result gives to the user the possibility to move a drone in a free environment where the friction force, the forces intruduced to control it and the obstacles' repulsive forces are acting.
