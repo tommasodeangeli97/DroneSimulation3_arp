@@ -23,3 +23,6 @@ DOWN_LEFT 'x'
 DOWN_RIGHT 'v'
 QUIT 'q'
 ```
+
+## Architecture
+![Slide1](https://github.com/user-attachments/assets/3e290ee5-54ef-4db2-9330-0a696b99898f)
