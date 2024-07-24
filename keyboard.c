@@ -287,8 +287,8 @@ int main(int argc, char* argv[]){
     writesd3 = atoi(argv[1]);
     readsd3 = atoi(argv[2]);
     readsd4 = atoi(argv[3]);
-    //fprintf(keylog, "writesd3: %d , readsd3: %d , readsd4: %d\n", writesd3, readsd3, readsd4);
-    //fflush(keylog);
+    fprintf(keylog, "writesd3: %d , readsd3: %d , readsd4: %d\n", writesd3, readsd3, readsd4);
+    fflush(keylog);
 
     while(!exit_value){
         //while loop in case the drone is near to obstacles, it collects the new forces calculated by the server as inputs and send those to the drone process
@@ -299,32 +299,32 @@ int main(int argc, char* argv[]){
                 varre = read(readsd4, &drone_x, sizeof(int));
                 sleep(1); 
             }
-            //fprintf(keylog, "dronex: %d \n", drone_x);
-            //fflush(keylog);
+            fprintf(keylog, "dronex: %d \n", drone_x);
+            fflush(keylog);
 
             varre = -1;
             while(varre == -1){
                 varre = read(readsd4, &drone_y, sizeof(int));
                 sleep(1);   
             }
-            //fprintf(keylog, "droney: %d \n", drone_y);
-            //fflush(keylog);
+            fprintf(keylog, "droney: %d \n", drone_y);
+            fflush(keylog);
 
             f[0] = drone_x;
             f[1] = drone_y;
 
-            //fprintf(keylog, "f_x: %d %d, f_y: %d %d\n", f[0], drone_x, f[1], drone_y);
-            //fflush(keylog);
+            fprintf(keylog, "f_x: %d %d, f_y: %d %d\n", f[0], drone_x, f[1], drone_y);
+            fflush(keylog);
             write(writesd3, &drone_x, sizeof(int));
             fsync(writesd3);
-            //fprintf(keylog, "sent \n");
-            //fflush(keylog);
+            fprintf(keylog, "sent \n");
+            fflush(keylog);
             sleep(1);
 
             write(writesd3, &drone_y, sizeof(int));
             fsync(writesd3);
-            //fprintf(keylog, "sent 2\n");
-            //fflush(keylog);
+            fprintf(keylog, "sent 2\n");
+            fflush(keylog);
             sleep(1);
             
             check = 0;
@@ -334,8 +334,8 @@ int main(int argc, char* argv[]){
         char ch = GetInput();  //acquire continously the keypad
         input_handler(ch);
         
-        //fprintf(keylog, "f_x: %d %d, f_y: %d %d\n", f[0],drone_x, f[1],drone_y);
-        //fflush(keylog);
+        fprintf(keylog, "f_x: %d %d, f_y: %d %d\n", f[0],drone_x, f[1],drone_y);
+        fflush(keylog);
         
         write(writesd3, &drone_x, sizeof(int));
         fsync(writesd3);

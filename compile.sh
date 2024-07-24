@@ -46,3 +46,10 @@ if [ $? -eq 0 ]; then
     else
         echo "errore compilazione TARGET"
     fi
+
+cc -o "sockserver" "sockserver.c"
+if [ $? -eq 0 ]; then
+        echo "compilazione di SOCKSERVER completata"
+    else
+        echo "errore compilazione SOCKSERVER"
+    fi

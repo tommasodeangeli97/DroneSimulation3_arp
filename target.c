@@ -177,7 +177,8 @@ int main(int argc, char* argv[]){
     }
 
     fclose(file);
-    //fprintf(tarlog, "n_tar: %d  \n", ncoord);
+    fprintf(tarlog, "n_tar: %d  \n", ncoord);
+    fflush(tarlog);
 
     char msg[100];  //to write on the logfile
     targets* target[ncoord];
@@ -209,6 +210,8 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    RegToLog(tarlog, "sock ok");
+
     bzero((char*)&server_address, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
@@ -219,9 +222,9 @@ int main(int argc, char* argv[]){
         RegToLog(error, "TARGET: error in inet_pton()");
         return 1;
     }
-
+    RegToLog(tarlog, "inet pton ok");
     //connect to server
-    if(connect(sock, (struct sockaddr*)&server_address, sizeof(server_address)) == -1){
+    if((connect(sock, (struct sockaddr*)&server_address, sizeof(server_address))) == -1){
         perror("connect");
         RegToLog(error, "TARGET: error in connecting to server");
         return 1;

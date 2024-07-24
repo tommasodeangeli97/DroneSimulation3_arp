@@ -177,8 +177,8 @@ int main(int argc, char* argv[]){
     }
 
     fclose(file);
-    //fprintf(obstlog, "n_obbst: %d  \n", ncoord);
-    //fflush(obstlog);
+    fprintf(obstlog, "n_obbst: %d  \n", ncoord);
+    fflush(obstlog);
 
     char msg[100];  //to write on the logfile
     struct sockaddr_in server_address;
@@ -220,7 +220,7 @@ int main(int argc, char* argv[]){
     }
 
     //connect to server
-    if(connect(sock, (struct sockaddr*)&server_address, sizeof(server_address)) == -1){
+    if((connect(sock, (struct sockaddr*)&server_address, sizeof(server_address))) == -1){
         perror("connect");
         RegToLog(error, "OBSTACLES: error in connecting to server");
         return 1;
