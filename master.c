@@ -186,7 +186,7 @@ int main(int argc, char* argv[]){
     key = spawn("./keyboard", key_path);
     usleep(500000);
     drone = spawn("./drone", drone_path);
-    usleep(500000);
+    sleep(1);
     obst = spawn("./obstacles", obstacles_path);
     usleep(500000);
     target = spawn("./target", target_path);
