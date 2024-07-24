@@ -242,6 +242,9 @@ int main(int argc, char* argv[]){
     writesd = atoi(argv[3]);
     readsd = atoi(argv[1]);
     readsd3 = atoi(argv[2]);
+
+    char msg[100];
+    char start[] = "START";
     
     //fprintf(dronelog, "writesd: %d , readsd: %d , readsd3: %d\n", writesd, readsd, readsd3);
     //fflush(dronelog);
@@ -301,6 +304,11 @@ int main(int argc, char* argv[]){
     }
     //fprintf(dronelog, "y: %d \n", y);
     //fflush(dronelog);
+
+    do{
+        read(readsd, msg, sizeof(msg));
+    }while(strcmp(msg, start) != 0);
+    RegToLog(dronelog, "started by server");
     close(readsd);  //close the reads to avoid data inconsistencies
     
     varre = -1;

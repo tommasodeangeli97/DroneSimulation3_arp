@@ -423,6 +423,11 @@ int main(int argc, char* argv[]){
     //fprintf(serverlog, "readsd: %d\n", readsd);
     //fflush(serverlog);
 
+    WINDOW *win = newwin(max_y, max_x, 0, 0);  //creats the window
+    box(win, 0, 0);  //adds the borders
+    wbkgd(win, COLOR_PAIR(1));  //sets the color of the window
+    wrefresh(win);  //prints and refreshes the window
+
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));
 
@@ -433,12 +438,12 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    /*if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
         perror("setsockport");
         RegToLog(error, "SERVER: error in setsockport");
         close(sock);
         exit(EXIT_FAILURE);
-    }*/
+    }
 
     //bind the socket
     
@@ -476,6 +481,7 @@ int main(int argc, char* argv[]){
     for(int i = 0; i < NCLIENT; i++){
         do{
             client_sock = accept(sock, NULL, NULL);
+            RegToLog(serverlog, "try");
         }while (client_sock == -1 && errno == EINTR);
         if( client_sock == -1){
             perror("accept");
@@ -529,11 +535,11 @@ int main(int argc, char* argv[]){
     int obst[2][20];
     int target[2][20];
 
-    WINDOW *win = newwin(max_y, max_x, 0, 0);  //creats the window
+    /*WINDOW *win = newwin(max_y, max_x, 0, 0);  //creats the window
     box(win, 0, 0);  //adds the borders
     wbkgd(win, COLOR_PAIR(1));  //sets the color of the window
     wrefresh(win);  //prints and refreshes the window
-
+    */
     int sel;
     int count = 0;
     float n1, n2;
@@ -558,7 +564,7 @@ int main(int argc, char* argv[]){
         }
 
         //select wich pipe to read between drone and obstacles
-        FD_SET(**piperd, &read_fd);
+        FD_SET(readsd, &read_fd);
         FD_SET(*pipeOb[0], &read_fd);
         FD_SET(*pipeTar[0], &read_fd);
 
@@ -567,8 +573,8 @@ int main(int argc, char* argv[]){
             max_fd = *pipeOb[0];
         if(*pipeTar[0] > max_fd)
             max_fd = *pipeTar[0];
-        if(**piperd > max_fd)
-            max_fd = **piperd;
+        if(readsd > max_fd)
+            max_fd = readsd;
 
         do{
             sel = select(max_fd+1, &read_fd, &write_fd, NULL, NULL);
@@ -657,7 +663,7 @@ int main(int argc, char* argv[]){
                     ok2 = true;
                 }
             }
-            if(FD_ISSET(**piperd, &read_fd)){
+            if(FD_ISSET(readsd, &read_fd)){
                 //taking the new drone position
                 varre = -1;
                 while(varre == -1){

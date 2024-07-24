@@ -215,9 +215,10 @@ int main(int argc, char* argv[]){
     bzero((char*)&server_address, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
+    //server_address.sin_addr.s_addr = inet_addr("10.0.2.15");
 
     //convert string in ip address
-    if(inet_pton(AF_INET, argv[2], &server_address.sin_addr) < 0){
+    if((inet_pton(AF_INET, argv[2], &server_address.sin_addr)) < 0){
         perror("inet_pton");
         RegToLog(error, "TARGET: error in inet_pton()");
         return 1;

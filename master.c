@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
     int portT_O = 8080;
     char portstrse[10];
     char portstrto[10];
-    char ipAdrress[20] = "127.0.0.1";
+    char ipAdrress[20] = "NOT_PUT_YET";
     int nprc = 0;
 
     int pipe_sd[2]; //pipe from server to drone
@@ -134,18 +134,17 @@ int main(int argc, char* argv[]){
     char * target_path[] = {"./target", portstrto, ipAdrress, NULL};
 
     int i = 0;
-    bool check = false;
-    bool all = false;
+    
+    //bool all = false;
     char button;
 
-    while(i < 3){  //just gives the initial information for the application
+    while(i < 2){  //just gives the initial information for the application
         if(i == 0){
             printf("\t\tWELCOME TO DRONE SIMULATOR BY Tommaso De Angeli\n\n");
             printf("\t\tthird assignment of Advance and Robot Programming\n\n");
             sleep(0.5);
             //printf("press q to stop the simulation or any other button to continue...\n\n\n\n");
-            printf("a -> to start the the complete simulation\n");
-            printf("e -> to start the the simulation without obstacles and targets\n");
+            printf("a -> to start the simulation\n");
             printf("q -> to to end\n");
             //clear_inputbuffer();
             button = getchar();
@@ -155,40 +154,11 @@ int main(int argc, char* argv[]){
             }
             if(button == 'a'){
                 printf("\t\tTHE COMPLETE SIMULATION UPLOADED...\n");
-                all = true;
-                i = 2;
-            }
-            if(button == 'e'){
-                i++;
-                clear_inputbuffer();
+                //all = true;
+                i ++;
             }
         }
         if(i == 1){
-            printf("\t\tONLY THE ENVIRONMENT IS BEAN UPLOADED\n\n");
-            printf("\t\tstarting the simulation only with the drone?\n");
-            printf("\t\ty -> yes      n -> no      q -> end\n");
-            
-            button = getchar();
-            if(button == 'q'){
-                RegToLog(routine, "MASTER : end by user");
-                exit(EXIT_FAILURE);
-            }
-            if(button == 'y'){
-                check = true;
-                printf("\t\tONLY THE ENVIRONMENT UPLOADED...\n");
-                i++;
-            } 
-            if(button == 'n'){
-                all = true;
-                printf("\t\tTHE COMPLETE SIMULATION UPLOADED...\n");
-                i++;
-            }
-            else{
-                printf("wrong button %c", button);
-                i++;
-            }
-        }
-        if(i == 2){
             printf("\t\tKEYS INSTRUCTIONS\n");
             printf("\tUP 'e'\n");
             printf("\tUP_LEFT 'w'\n");
@@ -201,6 +171,7 @@ int main(int argc, char* argv[]){
             printf("\tDOWN_RIGHT 'v'\n");
             printf("\tQUIT 'q'\n\n\n");
             printf("\t\tOK, LET'S START!!");
+
             sleep(4);
             i++;
                 
@@ -208,29 +179,19 @@ int main(int argc, char* argv[]){
         
     }
 
-    if(all){
-        nprc = 5;
-        server = spawn("./server", server_path);
-        usleep(500000);
-        key = spawn("./keyboard", key_path);
-        usleep(500000);
-        drone = spawn("./drone", drone_path);
-        usleep(500000);
-        obst = spawn("./obstacles", obstacles_path);
-        usleep(500000);
-        target = spawn("./target", target_path);
-        usleep(500000);
-    }
-
-    if(check){
-        nprc = 3;
-        server = spawn("./server", server_path);
-        usleep(500000);
-        key = spawn("./keyboard", key_path);
-        usleep(500000);
-        drone = spawn("./drone", drone_path);
-        usleep(500000);
-    }
+    
+    nprc = 5;
+    server = spawn("./server", server_path);
+    usleep(500000);
+    key = spawn("./keyboard", key_path);
+    usleep(500000);
+    drone = spawn("./drone", drone_path);
+    usleep(500000);
+    obst = spawn("./obstacles", obstacles_path);
+    usleep(500000);
+    target = spawn("./target", target_path);
+    usleep(500000);
+    
 
     pid_t pids[] = {server, drone, key};
     char pidsstring[3][50];

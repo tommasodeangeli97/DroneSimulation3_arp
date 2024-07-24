@@ -211,9 +211,10 @@ int main(int argc, char* argv[]){
     bzero((char*)&server_address, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
+    //server_address.sin_addr.s_addr = inet_addr("10.0.2.15");
 
     //convert string in ip address
-    if(inet_pton(AF_INET, argv[2], &server_address.sin_addr) < 0){
+    if((inet_pton(AF_INET, argv[2], &server_address.sin_addr)) < 0){
         perror("inet_pton");
         RegToLog(error, "OBSTACLES: error in inet_pton()");
         return 1;
@@ -250,6 +251,8 @@ int main(int argc, char* argv[]){
 
         //add the number of obstacles to the string
         sprintf(obststr, "O[%d]", ncoord);
+        if(ncoord == 0)
+            strcat(obststr, "|");
         for(int i = 0; i < ncoord; i++){
             //generate the coordinates
             obstacle[i]->x = rand() % maxx;
