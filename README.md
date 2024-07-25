@@ -72,7 +72,10 @@ $ hostname -I
 
 change in the `master` process the ipadrress variable and choose a port
 ```
-
+int portserv = 8080;
+int portT_O = 8080;
+...
+char ipAdrress[20] = "NOT_PUT_YET";
 ```
 
 now run the compiler and then start the application
