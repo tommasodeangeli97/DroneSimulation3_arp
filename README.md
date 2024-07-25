@@ -52,12 +52,12 @@ $ sudo apt install libncurses-dev
 
 then clone the repository on your pc
 ```
-$ git clone 
+$ git clone https://github.com/tommasodeangeli97/DroneSimulation3_arp.git
 ```
 
 by the *konsole* terminal go inside the folder
 ```
-$ cd 
+$ cd DroneSimulation3_arp
 ```
 
 make executable the compiler
