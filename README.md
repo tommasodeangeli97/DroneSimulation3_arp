@@ -85,5 +85,24 @@ $ ./master
 ```
 
 ### important note
-remenber to delet the `pidlog.log` file every time before start the application in order to have only the actual pids of the processes
+1. remenber to delet the `pidlog.log` file every time before start the application in order to have only the actual pids of the processes
 
+2. when the parameters for the socket connection are incorrectly set, the program will not close, becouse it will wait the socket connection. To close it the only way is to interrupt the processes with ctrl+c and close the terminal window. Now (after the change of the connection setting) is possible to re-run the code.
+
+## Possibles implementation
+1. the velocity of the start of the application could be improved using the select() function or implementing the comunication phase of the processes
+
+2. The drone could be further impruved to make it capable to rotate on itself
+
+3. Even if it is not possible in reality could be implemented a instant block of the robot, a key to stops the robot regardless of the forces applied and the velocity accumulated
+
+4. For the user point of view a special window can be impleted to avoid the closure of the application if the 'q' button is accidentally pressed
+
+5. the score value can take in account more then only the targets and the obstacles incountered by the drone
+
+6. also the keyboard could be implemented using the socket server and client to make only the keyboard and the map seeble user side
+
+## Author and contact
+Author: Tommaso De Angeli (https://github.com/tommasodeangeli97)
+
+contact: tommaso.deangeli.97@gmail.com
