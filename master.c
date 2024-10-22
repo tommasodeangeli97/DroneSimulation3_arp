@@ -15,7 +15,9 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <time.h>
+#include <pthread.h>
 
+pthread_t thread1, thread2;
 
 //function to write on the files
 void RegToLog(FILE* fname, const char * message){
@@ -51,6 +53,26 @@ int spawn(const char * program, char ** arg_list){
     fclose(error);
 }
 
+void* spawn_multithreads(void* args){
+    FILE* error = fopen("files/error.log", "a");
+
+    char ** info = (char**)args;
+
+    pid_t pid = fork();
+    if(pid < 0){
+        perror("fork thread");
+        RegToLog(error, "MASTER: error in threads");
+        pthread_exit(NULL);
+    }
+    if(pid == 0){
+        execvp(info[0], info);
+        perror("execvp threads");
+        exit(EXIT_FAILURE);
+    }
+    fclose(error);
+    pthread_exit(NULL);
+}
+
 void clear_inputbuffer(){
     int c;
     while((c = getchar()) != '\n' && c != EOF){
@@ -64,28 +86,23 @@ int main(int argc, char* argv[]){
     FILE* error = fopen("files/error.log", "w");
     FILE* pidlog = fopen("files/pidlog.log", "a");
 
-    if(error == NULL){
+    if(error == NULL || routine == NULL || pidlog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
-    if(routine == NULL){
-        perror("fopen");
-        exit(EXIT_FAILURE);
-    }
-    if(pidlog == NULL){
-        perror("fopen");
-        exit(EXIT_FAILURE);
-    }
+    
     RegToLog(routine, "MASTER : started");
 
     //pid for the programs
     pid_t server, drone, key, watchdog, obst, target;
-    int portserv = 8080;
-    int portT_O = 8080;
+    int portserv = 3500;
+    int portT_O = 3500;
     char portstrse[10];
     char portstrto[10];
-    char ipAdrress[20] = "NOT_PUT_YET";
+    char ipAdrress[20] = "127.0.0.1";
     int nprc = 0;
+
+    //pthread_t thread1, thread2;
 
     int pipe_sd[2]; //pipe from server to drone
     if(pipe(pipe_sd) == -1){
@@ -150,6 +167,9 @@ int main(int argc, char* argv[]){
             button = getchar();
             if(button == 'q'){
                 RegToLog(routine, "MASTER : end by user");
+                fclose(error);
+                fclose(routine);
+                fclose(pidlog);
                 exit(EXIT_FAILURE);
             }
             if(button == 'a'){
@@ -158,6 +178,7 @@ int main(int argc, char* argv[]){
                 i ++;
             }
         }
+
         if(i == 1){
             printf("\t\tKEYS INSTRUCTIONS\n");
             printf("\tUP 'e'\n");
@@ -170,7 +191,7 @@ int main(int argc, char* argv[]){
             printf("\tDOWN_LEFT 'x'\n");
             printf("\tDOWN_RIGHT 'v'\n");
             printf("\tQUIT 'q'\n\n\n");
-            printf("\t\tOK, LET'S START!!");
+            printf("\t\tOK, LET'S START!!\n");
 
             sleep(4);
             i++;
@@ -180,18 +201,38 @@ int main(int argc, char* argv[]){
     }
 
     
-    nprc = 5;
+    nprc = 3;
     server = spawn("./server", server_path);
     usleep(500000);
     key = spawn("./keyboard", key_path);
     usleep(500000);
     drone = spawn("./drone", drone_path);
-    sleep(1);
-    obst = spawn("./obstacles", obstacles_path);
+    sleep(4);
+    /*obst = spawn("./obstacles", obstacles_path);
     usleep(500000);
     target = spawn("./target", target_path);
+    usleep(500000);*/
+    if(pthread_create(&thread1, NULL, spawn_multithreads, (void*)obstacles_path) != 0){
+        perror("pthread create for obst");
+        RegToLog(error, "MASTER: error in creating thread for obst");
+        fclose(error);
+        fclose(routine);
+        fclose(pidlog);
+        exit(EXIT_FAILURE);
+    }
+    sleep(1);
+    if(pthread_create(&thread2, NULL, spawn_multithreads, (void*)target_path) != 0){
+        perror("pthread create for tar");
+        RegToLog(error, "MASTER: error in creating thread for tar");
+        fclose(error);
+        fclose(routine);
+        fclose(pidlog);
+        exit(EXIT_FAILURE);
+    }
     usleep(500000);
-    
+
+    pthread_detach(thread1);
+    pthread_detach(thread2);
 
     pid_t pids[] = {server, drone, key};
     char pidsstring[3][50];
@@ -221,7 +262,7 @@ int main(int argc, char* argv[]){
     for(int n = 0; n < (nprc + 1); n++){
         wait(NULL);
     }
-
+    
     RegToLog(routine, "MASTER : finish");
 
     //close the pipes

@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +21,7 @@
 #include <semaphore.h>
 
 #define MASS 1
-#define T_STEP 0.1
+#define T_STEP 0.3
 #define VISCOSITY 0.1
 #define FORCE 25
 #define MAX_LINE_LENGHT 256
@@ -85,7 +86,7 @@ void signalhandler(int signo, siginfo_t* info, void* contex){
     }
 
     if(signo == SIGINT){
-        printf("drone terminating return 0");
+        //printf("drone terminating return 0");
         FILE* routine = fopen("files/routine.log", "a");
         fprintf(routine, "%s\n", "DRONE : terminating");
         fclose(routine);
@@ -105,6 +106,7 @@ void signalhandler(int signo, siginfo_t* info, void* contex){
         if(fd == -1){
             perror("fp opening");
             fprintf(dronelog, "error in fd");
+            fclose(dronelog);
             exit(EXIT_FAILURE);
         }
     
@@ -112,6 +114,7 @@ void signalhandler(int signo, siginfo_t* info, void* contex){
         if(lock_file == -1){
             perror("failed to lock the file pid");
             fprintf(dronelog, "error in lock");
+            fclose(dronelog);
             exit(EXIT_FAILURE);
         }
         FILE* f = fdopen(fd, "r");
@@ -168,18 +171,18 @@ int main(int argc, char* argv[]){
     FILE* error = fopen("files/error.log", "a");
     FILE* dronelog = fopen("files/drone.log", "a");
 
-    if(error == NULL){
+    if(error == NULL || routine == NULL || dronelog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
-    if(routine == NULL){
+    /*if(routine == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
     if(dronelog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
-    }
+    }*/
     RegToLog(routine, "DRONE : start\n");
 
     SharedMemory *sm;  //shared memory pointer
@@ -191,6 +194,9 @@ int main(int argc, char* argv[]){
     if(shm_fd == -1){
         perror("shared memory faild\n");
         RegToLog(error, "DRONE : shared memory faild");
+        fclose(dronelog);
+        fclose(error);
+        fclose(routine);
         exit(EXIT_FAILURE);
     }
 
@@ -216,23 +222,37 @@ int main(int argc, char* argv[]){
     if(sigaction(SIGUSR1, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "DRONE: error in sigaction()");
+        fclose(dronelog);
+        fclose(error);
+        fclose(routine);
         exit(EXIT_FAILURE);
     }
     if(sigaction(SIGUSR2, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "DRONE : error in sigaction()");
+        fclose(dronelog);
+        fclose(error);
+        fclose(routine);
         exit(EXIT_FAILURE);
     }
     if(sigaction(SIGINT, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "DRONE : error in sigaction()");
+        fclose(dronelog);
+        fclose(error);
+        fclose(routine);
         exit(EXIT_FAILURE);
     }
     if(sigaction(34, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "DRONE : error in sigaction()");
+        fclose(dronelog);
+        fclose(error);
+        fclose(routine);
         exit(EXIT_FAILURE);
     }
+
+    fd_set read_fd, write_fd;
 
     //use of pipe to take from the server the max of x and y
     int readsd, readsd3;
@@ -255,7 +275,7 @@ int main(int argc, char* argv[]){
         perror("readsd");
         RegToLog(error, "DRONE : error in readsd 1");
     }
-    sleep(1);
+    //sleep(1);
     
     //fprintf(dronelog, "max x: %d \n", maxx);
     //fflush(dronelog);
@@ -266,9 +286,9 @@ int main(int argc, char* argv[]){
         perror("readsd");
         RegToLog(error, "DRONE : error in readsd 2");
     }
-    sleep(1);
-    //fprintf(dronelog, "max y: %d \n", maxy);
-    //fflush(dronelog);
+    //sleep(1);
+    sprintf(msg, "maxx->%d  maxy->%d", maxx, maxy);
+    RegToLog(dronelog, msg);
 
     //defining the variables to store the velocities, accelerations and positions
     int x = 0;
@@ -278,7 +298,7 @@ int main(int argc, char* argv[]){
     double vely = 0.0;
     int posx, posy;
 
-    sleep(1);
+    //sleep(1);
     
     //while loops to collect the position of the drone created randomly by the server process
     while(x == 0){
@@ -288,7 +308,7 @@ int main(int argc, char* argv[]){
            perror("readsd");
             RegToLog(error, "DRONE : error in readsd 3");
         }
-        sleep(1);
+        //sleep(1);
     }
     //fprintf(dronelog, "x: %d \n", x);
     //fflush(dronelog);
@@ -300,103 +320,154 @@ int main(int argc, char* argv[]){
             perror("readsd");
             RegToLog(error, "DRONE : error in readsd 4");
         }
-        sleep(1);
+        //sleep(1);
     }
-    //fprintf(dronelog, "y: %d \n", y);
-    //fflush(dronelog);
-
+    sprintf(msg, "x pos->%d  y pos->%d", x, y);
+    RegToLog(dronelog, msg);
     do{
         read(readsd, msg, sizeof(msg));
+        RegToLog(dronelog, "reding for the start command");
+        //sleep(1);
     }while(strcmp(msg, start) != 0);
     RegToLog(dronelog, "started by server");
     close(readsd);  //close the reads to avoid data inconsistencies
     
     varre = -1;
     //takes from the keyboard the force acting on the drone and calculates the accelleration, the velocity and the position
+
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+
     while(!sigint_rec){  
         
-        varre = -1;
-        while(varre == -1){
-            varre = read(readsd3, &forx, sizeof(int));
-            RegToLog(dronelog, "DRONE : error in readsd3 1\n");
-            sleep(1);
-        }
-        
-        //fprintf(dronelog, "forx: %d \n", forx);
+        FD_ZERO(&read_fd);
+        FD_SET(readsd3, &read_fd);
+        int max_fd = readsd3;
 
-        //updating the shared memory
-        sem_wait(sm_sem);
-        sm->forces[0] = forx;
-        sem_post(sm_sem);
+        int sel;
+        do{
+            sel = select(max_fd+1, &read_fd, NULL, NULL, &timeout);
+            /*sprintf(msg, "sel %d", sel);
+            RegToLog(dronelog, msg);*/
+        }while (sel == -1 && errno == EINTR );
+        if(sel < 0){
+            perror("error in select");
+            RegToLog(error, "drone: error in selct");
+            fclose(dronelog);
+            fclose(error);
+            fclose(routine);
+            exit(EXIT_FAILURE);
+        }
+        if(sel > 0){
+            if(FD_ISSET(readsd3, &read_fd)){
+                varre = -1;
+                while(varre == -1){
+                    varre = read(readsd3, &forx, sizeof(int));
+                    RegToLog(dronelog, "DRONE : error in readsd3 1\n");
+                    //sleep(1);
+                }
+        
+                //fprintf(dronelog, "forx: %d \n", forx);
 
-        sleep(1);
-        
-        varre = -1;
-        while(varre == -1){
-            varre = read(readsd3, &fory, sizeof(int));
-            RegToLog(dronelog, "DRONE : error in readsd3 2\n");
-            sleep(1);
-        }
-        
-        sleep(1);
-        
-        //fprintf(dronelog, "fory: %d \n", fory);
-        sem_wait(sm_sem);
-        sm->forces[1] = fory;
-        sem_post(sm_sem);
+                //updating the shared memory
+                /*sem_wait(sm_sem);
+                sm->forces[0] = forx;
+                sem_post(sm_sem);*/
 
-        accx = acceleration(forx*FORCE);
-        velx = velocity(accx, velx);
-        sem_wait(sm_sem);
-        sm->vel[0] = velx;
-        sem_post(sm_sem);
-        posx = position(x, velx);
-        //the drone can't go out of the screen
-        if(posx >= maxx-1){
-            x = maxx-2;
-            RegToLog(routine, "DRONE : x lower limit");
-        }
-        else if(posx <= 1){
-            x = 2;
-            RegToLog(routine, "DRONE : x upper limit");
-        }
-        else{
-            x = posx;
-        }
+                //sleep(1);
         
-        accy = acceleration(fory*FORCE);
-        vely = velocity(accy, vely);
-        sem_wait(sm_sem);
-        sm->vel[1] = vely;
-        sem_post(sm_sem);
-        posy = position(y, vely);
-        //the drone can't go out of the screen
-        if(posy >= maxy){
-            y = maxy-2;
-            RegToLog(routine, "DRONE : y lower limit");
-        }
-        else if(posy <= 1){
-            y = 2;
-            RegToLog(routine, "DRONE : y upper limit");
-        }
-        else{
-            y = posy;
-        }
+                varre = -1;
+                while(varre == -1){
+                    varre = read(readsd3, &fory, sizeof(int));
+                    RegToLog(dronelog, "DRONE : error in readsd3 2\n");
+                    //sleep(1);
+                }
+                
+                //sleep(1);
+                
+                //fprintf(dronelog, "fory: %d \n", fory);
+                sprintf(msg, "drone force x->%d  y->%d", forx, fory);
+                RegToLog(dronelog, msg);
 
-        //fprintf(dronelog, "x:%d  y:%d\n", x, y);
-        //fflush(dronelog);
+                /*sem_wait(sm_sem);
+                sm->forces[1] = fory;
+                sem_post(sm_sem);*/
 
-        //sending the new position to the server
-        write(writesd, &x, sizeof(int));
-        fsync(writesd);
-        sleep(1);
-        write(writesd, &y, sizeof(int));
-        fsync(writesd);
-        sleep(1);
-        
+                accx = acceleration(forx*FORCE);
+                if(accx == 0)
+                    velx = 0;
+                else
+                    velx = velocity(accx, velx);
+                /*sem_wait(sm_sem);
+                sm->vel[0] = velx;
+                sem_post(sm_sem);*/
+                posx = position(x, velx);
+                //the drone can't go out of the screen
+                if(posx >= maxx-1){
+                    x = maxx-2;
+                    RegToLog(routine, "DRONE : x lower limit");
+                }
+                else if(posx <= 1){
+                    x = 2;
+                    RegToLog(routine, "DRONE : x upper limit");
+                }
+                else{
+                    x = posx;
+                }
+                
+                accy = acceleration(fory*FORCE);
+                if(accy == 0)
+                    vely = 0;
+                else
+                    vely = velocity(accy, vely);
+
+                sem_wait(sm_sem);
+                sm->vel[1] = vely;
+
+                sm->forces[0] = forx;
+                sm->forces[1] = fory;
+                sm->vel[0] = velx;
+                sem_post(sm_sem);
+
+                posy = position(y, vely);
+                //the drone can't go out of the screen
+                if(posy >= maxy){
+                    y = maxy-2;
+                    RegToLog(routine, "DRONE : y lower limit");
+                }
+                else if(posy <= 1){
+                    y = 2;
+                    RegToLog(routine, "DRONE : y upper limit");
+                }
+                else{
+                    y = posy;
+                }
+
+                sprintf(msg, "new pos x->%d  y->%d", x, y);
+                RegToLog(dronelog, msg);
+
+                //sending the new position to the server
+                write(writesd, &x, sizeof(int));
+                fsync(writesd);
+                sleep(1);
+                write(writesd, &y, sizeof(int));
+                fsync(writesd);
+                sleep(1);
+            }
+        }
+        /*else
+            RegToLog(dronelog, "sel = 0");*/       
     }
 
     //routine to close the shared memory, the files, pipes and the semaphore
+    
+
+    sem_close(sm_sem);
+    close(writesd);
+    close(readsd3);
+    memset(sm, 0, SIZE);
+    munmap(sm, SIZE);
     if(shm_unlink(shm_name) == 1){
         printf("okok");
         exit(EXIT_FAILURE);
@@ -406,11 +477,6 @@ int main(int argc, char* argv[]){
         RegToLog(error, "DRONE : close faild");
         exit(EXIT_FAILURE);
     }
-
-    sem_close(sm_sem);
-    close(writesd);
-    close(readsd3);
-    munmap(sm, SIZE);
     fclose(dronelog);
     fclose(error);
     fclose(routine);

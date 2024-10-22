@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,7 +69,7 @@ void signalhandler(int signo, siginfo_t* info, void* context){
         fclose(watchlog);
     }
     if(signo == SIGUSR2){
-        printf("terminating the watchdog");
+        //printf("terminating the watchdog");
         kill(server_pid, SIGINT);
         kill(drone_pid, SIGINT);
         kill(keyboard_pid, SIGINT);
@@ -82,18 +83,18 @@ int main(int argc, char* argv[]){
     FILE* error = fopen("files/error.log", "a");
     FILE* watchlog = fopen("files/watchdog.log", "a");
     
-    if(error == NULL){
+    if(error == NULL || routine == NULL || watchlog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
-    if(routine == NULL){
+    /*if(routine == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
     if(watchlog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
-    }
+    }*/
 
     RegToLog(routine, "WATCHDOG : start");
 
@@ -104,11 +105,17 @@ int main(int argc, char* argv[]){
     if(sigaction(SIGUSR1, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "WATCHDOG : error in sigaction");
+        fclose(routine);
+        fclose(error);
+        fclose(watchlog);
         exit(EXIT_FAILURE);
     }
     if(sigaction(SIGUSR2, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "WATCHDOG : error in sigaction");
+        fclose(routine);
+        fclose(error);
+        fclose(watchlog);
         exit(EXIT_FAILURE);
     }
 
@@ -159,6 +166,9 @@ int main(int argc, char* argv[]){
                 perror("kill keyboard");
                 RegToLog(error, "WATCHDOG : error kill keyboard");
             }
+            fclose(routine);
+            fclose(error);
+            fclose(watchlog);
             exit(EXIT_FAILURE);
         }
         else
@@ -177,6 +187,9 @@ int main(int argc, char* argv[]){
                 perror("kill keyboard");
                 RegToLog(error, "WATCHDOG : error kill keyboard");
             }
+            fclose(routine);
+            fclose(error);
+            fclose(watchlog);
             exit(EXIT_FAILURE);
         }
         else
@@ -195,6 +208,9 @@ int main(int argc, char* argv[]){
                 perror("kill keyboard");
                 RegToLog(error, "WATCHDOG : error kill keyboard");
             }
+            fclose(routine);
+            fclose(error);
+            fclose(watchlog);
             exit(EXIT_FAILURE);
         }
         else

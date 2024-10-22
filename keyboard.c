@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,7 @@
 int exit_value = 0;
 pid_t drone_pid, server_pid;
 int check = 0;
+char msg[100];
 
 pid_t watch_pid = -1;  //declaration pid of the watchdog
 void signalhandler(int signo, siginfo_t* info, void* contex){
@@ -71,7 +73,7 @@ void signalhandler(int signo, siginfo_t* info, void* contex){
     }
 
     if(signo == SIGINT){
-        printf("drone terminating return 0");
+        //printf("drone terminating return 0");
         FILE* routine = fopen("files/routine.log", "a");
         fprintf(routine, "%s\n", "DRONE : terminating");
         fclose(routine);
@@ -154,47 +156,49 @@ void RegToLog(FILE* fname, const char * message){
 }
 
 int drone_x = 0, drone_y = 0;
-int f[2];
+int f[2] = {0};
 
 void input_handler(char key){  //function to handle the input recieved from the user and updates the shared memory
     FILE* routine = fopen("files/routine.log", "a");
-
+    FILE* keylog = fopen("files/keyboard.log", "a");
+    sprintf(msg, "key %c", key);
+    RegToLog(keylog, msg);
     switch(key){
         case UP:
-            drone_y -= 1;
+            drone_y --;
             break;
         case UP_L:
-            drone_y -= 1;
-            drone_x -= 1;
+            drone_y --;
+            drone_x --;
             break;
         case UP_R:
-            drone_y -= 1;
-            drone_x += 1;
+            drone_y --;
+            drone_x ++;
             break;
         case RIGHT:
-            drone_x += 1;
+            drone_x ++;
             break;
         case LEFT:
-            drone_x -= 1;
+            drone_x --;
             break;
         case BRAKE:
             drone_x = 0;
             drone_y = 0;
             break;
         case DOWN:
-            drone_y += 1;
+            drone_y ++;
             break;
         case DOWN_L:
-            drone_y += 1;
-            drone_x -= 1;
+            drone_y ++;
+            drone_x --;
             break;
         case DOWN_R:
-            drone_y += 1;
-            drone_x += 1;
+            drone_y ++;
+            drone_x ++;
             break;
         case QUIT:
-            printf("exiting the program");
-            sleep(2);
+            //printf("exiting the program");
+            //sleep(2);
             kill(watch_pid, SIGUSR2);
             exit_value = 1;
             break;
@@ -206,7 +210,11 @@ void input_handler(char key){  //function to handle the input recieved from the 
     f[0] = drone_x;
     f[1] = drone_y;
 
+    sprintf(msg, "handler f[0]->%d  f[1]->%d  dronex->%d  droney->%d", f[0],f[1],drone_x,drone_y);
+    RegToLog(keylog, msg);
+
     fclose(routine);
+    fclose(keylog);
     return;
 }
 
@@ -242,18 +250,18 @@ int main(int argc, char* argv[]){
     FILE* routine = fopen("files/routine.log", "a");
     FILE* error = fopen("files/error.log", "a");
     FILE* keylog = fopen("files/keyboard.log", "a");
-    if(error == NULL){
+    if(error == NULL || routine == NULL || keylog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
-    if(routine == NULL){
+    /*if(routine == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
     }
     if(keylog == NULL){
         perror("fopen");
         exit(EXIT_FAILURE);
-    }
+    }*/
     RegToLog(routine, "KAYBOARD : start\n");
 
     struct sigaction sa;  //initialize sigaction
@@ -263,32 +271,49 @@ int main(int argc, char* argv[]){
     if(sigaction(SIGUSR1, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "KEYBOARD : error in sigaction()");
+        fclose(error);
+        fclose(routine);
+        fclose(keylog);
         exit(EXIT_FAILURE);
     }
     if(sigaction(SIGUSR2, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "KEYBOARD : error in sigaction()");
+        fclose(error);
+        fclose(routine);
+        fclose(keylog);
         exit(EXIT_FAILURE);
     }
     if(sigaction(SIGINT, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "KEYBOARD : error in sigaction()");
+        fclose(error);
+        fclose(routine);
+        fclose(keylog);
         exit(EXIT_FAILURE);
     }
     if(sigaction(34, &sa, NULL) == -1){
         perror("sigaction");
         RegToLog(error, "KKEYYBOARD : error in sigaction()");
+        fclose(error);
+        fclose(routine);
+        fclose(keylog);
         exit(EXIT_FAILURE);
     }
 
     //pipe to give to the drone process the max x and y
     int writesd3, readsd3, readsd4;
     int varre;
+    fd_set read_fd, write_fd;
     writesd3 = atoi(argv[1]);
     readsd3 = atoi(argv[2]);
     readsd4 = atoi(argv[3]);
     fprintf(keylog, "writesd3: %d , readsd3: %d , readsd4: %d\n", writesd3, readsd3, readsd4);
     fflush(keylog);
+
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
 
     while(!exit_value){
         //while loop in case the drone is near to obstacles, it collects the new forces calculated by the server as inputs and send those to the drone process
@@ -297,21 +322,24 @@ int main(int argc, char* argv[]){
             varre = -1;
             while(varre == -1){
                 varre = read(readsd4, &drone_x, sizeof(int));
-                sleep(1); 
+                //sleep(1); 
             }
             fprintf(keylog, "dronex: %d \n", drone_x);
             fflush(keylog);
-
+            //sleep(1);
             varre = -1;
             while(varre == -1){
                 varre = read(readsd4, &drone_y, sizeof(int));
-                sleep(1);   
+                //sleep(1);   
             }
             fprintf(keylog, "droney: %d \n", drone_y);
             fflush(keylog);
 
-            f[0] = drone_x;
-            f[1] = drone_y;
+            f[0] = f[0]+drone_x;
+            f[1] = f[1]+drone_y;
+
+            drone_x = f[0];
+            drone_y = f[1];
 
             fprintf(keylog, "f_x: %d %d, f_y: %d %d\n", f[0], drone_x, f[1], drone_y);
             fflush(keylog);
@@ -331,23 +359,47 @@ int main(int argc, char* argv[]){
             
         }
 
+        FD_ZERO(&write_fd);
+        FD_SET(writesd3, &write_fd);
+        int max_fd = writesd3;
+
         char ch = GetInput();  //acquire continously the keypad
         input_handler(ch);
         
         fprintf(keylog, "f_x: %d %d, f_y: %d %d\n", f[0],drone_x, f[1],drone_y);
         fflush(keylog);
         
-        write(writesd3, &drone_x, sizeof(int));
-        fsync(writesd3);
-        sleep(1);
-        //fprintf(keylog, "sent \n");
-        //fflush(keylog);
+        int sel;
+        do{
+            sel = select(max_fd+1, NULL, &write_fd, NULL, &timeout);
+            /*sprintf(msg, "sel %d", sel);
+            RegToLog(keylog, msg);*/
+        }while (sel == -1 && errno == EINTR );
+        if(sel < 0){
+            perror("error in select");
+            RegToLog(error, "keyboard: error in selct");
+            fclose(error);
+            fclose(routine);
+            fclose(keylog);
+            exit(EXIT_FAILURE);
+        }
+        if(sel > 0){
+            if(FD_ISSET(writesd3, &write_fd)){
+                write(writesd3, &drone_x, sizeof(int));
+                fsync(writesd3);
+                sleep(1);
+                //fprintf(keylog, "sent \n");
+                //fflush(keylog);
         
-        write(writesd3, &drone_y, sizeof(int));
-        fsync(writesd3);
-        sleep(1);
-        //fprintf(keylog, "sent 2\n");
-        //fflush(keylog);
+                write(writesd3, &drone_y, sizeof(int));
+                fsync(writesd3);
+                sleep(1);
+                //fprintf(keylog, "sent 2\n");
+                //fflush(keylog);
+            }
+        }
+        /*else
+            RegToLog(keylog, "select = 0");  */      
         
     }
 
