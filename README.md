@@ -43,6 +43,10 @@ QUIT 'q'
 
 `Sockserver` -> the server's child, it implements the socket communication and it has to be executed one for each client
 
+## Overview
+
+https://github.com/user-attachments/assets/9db72fb4-bd4e-4d7d-b862-2bfc7726616b
+
 ## Installation
 To properly install the application assure you to have installe *konsole* and *ncurses* on your computer
 ```
